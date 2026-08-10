@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -204,6 +205,11 @@ async def run(args) -> None:
 
 
 def main() -> None:
+    # Sin esto, Python amontona la salida en un búfer cuando no escribe a una
+    # terminal (servicio en segundo plano, systemd, redirección a archivo) y las
+    # instrucciones aparecen hasta el final, cuando ya no sirven de nada.
+    sys.stdout.reconfigure(line_buffering=True)
+
     ap = argparse.ArgumentParser(description="Mapeo de disponibilidad asistido por humano")
     ap.add_argument("--tramite", default=TRAMITE_CON_RFC,
                     choices=[TRAMITE_CON_RFC, TRAMITE_RFC_FISICA, TRAMITE_RFC_MORAL])
