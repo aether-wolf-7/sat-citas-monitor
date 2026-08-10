@@ -89,15 +89,67 @@ pasos 3 y 4:
    personas": ver **`docs/terminos-sat.md`**, que hay que leer antes de
    prometerle al cliente que todo está 100 % en regla.
 
+## `/creaCita` — la pantalla de disponibilidad, y su reloj de 5 minutos
+
+Mapeada en sesión real el **2026-08-10**: una persona resolvió el captcha y el
+grabador registró 100 pantallas.
+
+La pantalla trae cuatro combos en cascada —**Servicios → Entidad Federativa →
+Módulo → Horario**— más un calendario ("Fecha y hora") y el botón *Generar
+cita*. Cada combo habilita al siguiente: sin entidad no se puede elegir módulo.
+
+Y trae **una cuenta regresiva de 5 minutos**, etiquetada *"Tiempo restante para
+generar tu cita"*. Esto es lo más importante que hemos encontrado en todo el
+proyecto.
+
+Registro literal de la sesión grabada:
+
+| Captura | Reloj | URL |
+|---|---|---|
+| paso03 | 05:00 | `/creaCita` |
+| paso40 | 03:04 | `/creaCita` |
+| paso80 | 00:56 | `/creaCita` |
+| paso97 | 00:02 | `/creaCita` |
+| paso98 | — | `/` ← el portal regresa solo al inicio |
+
+Es decir: **la sesión con visibilidad de citas dura 5 minutos y se muere sola.**
+No es un tiempo de inactividad —el reloj corrió parejo sin que nadie tocara
+nada— sino un plazo duro para completar el agendado.
+
+### Lo que esto rompe
+
+El plan acordado con el cliente suponía: *una persona abre la sesión, el sistema
+vigila dentro de ella 24/7, y avisa cuando la sesión se cae.* Contra este portal
+esa sesión larga **no existe**. Vigilar 24/7 de forma continua exigiría que un
+humano resolviera un captcha cada 5 minutos: unos **288 captchas al día**.
+
+Automatizar el captcha resolvería el problema y está **descartado**: es la línea
+que el cliente puso y que el diseño respeta.
+
+Lo que sí cabe dentro de la ventana de 5 minutos es un **barrido rápido**:
+la persona abre la puerta una vez y el sistema recorre en segundos todas las
+combinaciones de oficina y trámite que a mano tomarían muchísimo más, guarda
+capturas y avisa lo que encontró. Es un cambio de "monitoreo continuo" a
+"asistente de barrido", y hay que hablarlo con el cliente antes de seguir
+construyendo sobre el supuesto viejo.
+
 ## Qué falta mapear (requiere sesión abierta por un humano)
 
-- Pantalla de selección de oficina/módulo → confirmar cómo aparece Cancún y
-  cómo se listan las oficinas de CDMX.
-- Calendario de disponibilidad → selector exacto de día/hora disponible y el
-  texto real de "no hay citas".
-- El **selector ancla de sesión viva**: el elemento que existe únicamente
-  cuando de verdad estamos en la pantalla de disponibilidad. Es la pieza que
-  evita el falso "cero citas" que preocupa al cliente.
+En la sesión grabada nadie llegó a elegir servicio ni módulo —el reloj se agotó
+antes—, así que sigue pendiente:
+
+- **Lista de módulos de Cancún** (y de CDMX): hay que abrir el combo Módulo con
+  Quintana Roo elegido y leer las opciones.
+- **Cómo se marca un día sin disponibilidad** en el calendario. La hipótesis es
+  `aria-disabled="true"`, pero sin módulo seleccionado ningún día estaba
+  deshabilitado, así que está sin confirmar.
+- **Texto real del estado vacío** ("no hay citas"), que es justo lo que el
+  detector necesita para distinguir "no hay lugar" de "la sesión se murió".
+
+El **ancla de sesión viva** en cambio ya está clara y es fuerte: el reloj
+(`#timer`). Si el contador está presente y corriendo, la pantalla de
+disponibilidad es real; si desapareció o volvimos a `/`, la sesión murió y
+jamás debe reportarse "cero citas".
 
 Mientras tanto, los selectores marcados `POR CONFIRMAR` en `selectors.py` son
 hipótesis, no verdades.

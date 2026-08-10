@@ -93,15 +93,47 @@ SESSION_DEAD_HINTS = (
     "error inesperado",
 )
 
-# --- Disponibilidad (pantallas posteriores al captcha) --------------------
-# Pendiente de mapear: requiere una sesión abierta por un humano con datos
-# reales (ver docs/portal-map.md §Bloqueo). Estas son hipótesis marcadas para
-# confirmar contra la pantalla real antes de usarse en producción.
+# --- /creaCita — pantalla de disponibilidad -------------------------------
+# CONFIRMADO en sesión real del 2026-08-10 (ver docs/portal-map.md).
+URL_CREA_CITA = "https://citas.sat.gob.mx/creaCita"
+
+# EL RELOJ. La pantalla de disponibilidad trae una cuenta regresiva de
+# 5 minutos ("Tiempo restante para generar tu cita"). Al llegar a cero el
+# portal regresa solo a la página inicial y la sesión muere. Es el hallazgo
+# que define la arquitectura del proyecto: no existe una sesión larga que
+# vigilar, sino ventanas de 5 minutos.
+COUNTDOWN = "#timer countdown, countdown.count-down"
+COUNTDOWN_CONTAINER = "#timer"
+COUNTDOWN_LABEL = "Tiempo restante para generar tu cita"
+SESSION_WINDOW_SECONDS = 300
+
+# Los cuatro combos en cascada: cada uno habilita al siguiente.
+# servicio -> entidad federativa -> módulo -> (calendario) -> horario
+SELECT_SERVICIO = 'mat-select[name="servicio"]'
+SELECT_ENTIDAD = 'mat-select[name="entidades"]'
+# Módulo y Horario no traen atributo `name`; se ubican por su etiqueta, que es
+# más estable que el id ordinal (mat-select-4 depende del orden de render).
+SELECT_MODULO = 'mat-form-field:has(label:has-text("Módulo")) mat-select'
+SELECT_HORARIO = 'mat-form-field:has(label:has-text("Horario")) mat-select'
+# Las opciones de un mat-select se dibujan en un overlay fuera del formulario.
+OPCION_SELECT = "mat-option .mat-option-text"
+
+CALENDAR_ROOT = "mat-calendar"
+CALENDAR_DAY = "td.mat-calendar-body-cell"
+# POR CONFIRMAR: cómo se marca un día sin disponibilidad. En la captura no
+# había ningún módulo seleccionado, así que ningún día estaba deshabilitado
+# todavía. La hipótesis razonable es `aria-disabled="true"` / la clase
+# `mat-calendar-body-disabled`, pero hay que verlo con un módulo elegido antes
+# de confiar en ello.
+CALENDAR_DAY_DISABLED = 'td.mat-calendar-body-cell[aria-disabled="true"]'
+
+# NUNCA se le hace clic a esto. Existe sólo para reconocer la pantalla y para
+# dejar constancia de que el sistema jamás agenda: eso lo hace una persona.
+BTN_GENERAR_CITA_NO_TOCAR = 'button[type="submit"]:has-text("Generar cita")'
+
 TEXT_SIN_CITAS_HINTS = (
     "no hay citas disponibles",
     "no existen citas",
     "sin disponibilidad",
     "no hay disponibilidad",
-)
-SELECT_OFICINA = 'mat-select, select'  # POR CONFIRMAR
-CALENDAR_ROOT = 'mat-calendar, .mat-calendar'  # POR CONFIRMAR
+)  # POR CONFIRMAR: no se llegó a ver el estado vacío real
