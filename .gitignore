@@ -1,0 +1,30 @@
+# --- Documentos locales del proyecto (sensibles — nunca subir) ---
+SAT-Monitor-Handoff.md
+CLAUDE.md
+
+# --- Secretos y datos de runtime ---
+config.json
+.env
+data/
+*.db
+*.sqlite3
+screenshots/
+bridge/session/
+bridge/auth_info*/
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# --- Node (bridge WhatsApp) ---
+node_modules/
+
+# --- SO / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

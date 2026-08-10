@@ -1,0 +1,42 @@
+{
+  "polling": {
+    "interval_seconds": 60,
+    "jitter_seconds": 10
+  },
+  "targets": [
+    {
+      "zone": "Cancun",
+      "office": "Módulo SAT Cancún",
+      "tramites": ["RFC", "e.firma"],
+      "enabled": true
+    }
+  ],
+  "alerts": {
+    "telegram": {
+      "enabled": true,
+      "bot_token": "PON_AQUI_EL_TOKEN_DEL_BOT",
+      "chat_ids": []
+    },
+    "whatsapp": {
+      "enabled": false,
+      "bridge_url": "http://127.0.0.1:3001",
+      "numbers": []
+    },
+    "email": {
+      "enabled": false,
+      "smtp_host": "",
+      "smtp_port": 587,
+      "smtp_user": "",
+      "smtp_password": "",
+      "recipients": []
+    }
+  },
+  "routing": "by_zone",
+  "heartbeat": {
+    "max_silence_minutes": 15
+  },
+  "storage": {
+    "sqlite_path": "data/monitor.db",
+    "screenshots_dir": "screenshots"
+  }
+}
