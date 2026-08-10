@@ -28,9 +28,17 @@ se apoya en `formcontrolname`, `id`, rol + texto visible y estructura semántica
 
 | Panel | Campos que exige | Trámite del proyecto |
 |---|---|---|
-| Contribuyente que cuente con RFC | RFC, correo, confirmar correo | **e.firma** (y demás trámites de quien ya tiene RFC) |
+| Contribuyente que cuente con RFC | RFC (13), CURP *(opcional)*, correo, confirmar correo | **e.firma** (y demás trámites de quien ya tiene RFC) |
 | Inscripción al padrón — Personas Morales | RFC del representante legal, razón social, correo, confirmar correo, ¿inscrito en SIGER? | **RFC** (moral) |
-| Inscripción al padrón — Personas Físicas | CURP, nombre completo, correo, confirmar correo | **RFC** (física) |
+| Inscripción al padrón — Personas Físicas | CURP (18), nombre completo, correo, confirmar correo | **RFC** (física) |
+
+Detalles del formulario, comprobados en vivo:
+
+- Hay una **casilla obligatoria** de términos y condiciones + aviso de privacidad.
+  Sin marcarla, "Siguiente" queda inhabilitado.
+- RFC y CURP se convierten solos a mayúsculas; el campo de confirmar correo
+  **bloquea pegar** (`onpaste="return false"`), hay que escribirlo.
+- El captcha **no** está en esta pantalla: aparece después de "Siguiente".
 
 ### Endpoints internos observados (tráfico XHR de la propia SPA)
 
@@ -76,7 +84,10 @@ pasos 3 y 4:
    son gratuitos y que "ninguna persona, asociación o gestor" puede cobrar por
    agendar una cita. No afecta la legalidad del software —que solo detecta y
    avisa— pero es un punto que el cliente debe conocer, porque su operación es
-   con gestores.
+   con gestores. Los términos y condiciones van más lejos y nombran de forma
+   expresa la gestoría y el "acaparamiento de citas por parte de terceras
+   personas": ver **`docs/terminos-sat.md`**, que hay que leer antes de
+   prometerle al cliente que todo está 100 % en regla.
 
 ## Qué falta mapear (requiere sesión abierta por un humano)
 

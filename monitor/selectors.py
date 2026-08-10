@@ -48,12 +48,27 @@ PANEL_INSCRIPCION_PM = "Inscripción al padrón de contribuyentes Personas Moral
 PANEL_INSCRIPCION_PF = "Inscripción al padrón de contribuyentes Personas Físicas"
 
 # Campos del formulario (Angular reactive forms — nombres estables).
+# Notas del mapeo en vivo:
+#   - RFC acepta 13 caracteres, CURP 18; ambos se pasan a mayúsculas solos.
+#   - En el panel "con RFC", CURP es opcional (sin asterisco).
+#   - "correoconfirmacion" bloquea pegar (onpaste/oncopy/oncut = return false).
+#     `fill()` de Playwright escribe el valor directo, así que sí funciona.
 INPUT_RFC = 'input[formcontrolname="rfc"]'
 INPUT_CORREO = 'input[formcontrolname="correo"]'
 INPUT_CORREO_CONFIRMA = 'input[formcontrolname="correoconfirmacion"]'
 INPUT_CURP = 'input[formcontrolname="curp"]'
 INPUT_NOMBRE = 'input[formcontrolname="nombre"]'
 INPUT_RAZON_SOCIAL = 'input[formcontrolname="razonSocial"]'
+
+# Casilla de términos y condiciones: sin marcarla, "Siguiente" queda inhabilitado.
+# El <input> real está oculto (cdk-visually-hidden), así que se hace clic en el
+# componente de Material, no en el input.
+CHECK_TERMINOS = "mat-checkbox"
+CHECK_TERMINOS_INPUT = "#mat-checkbox-1-input"
+URL_TERMINOS_PDF = (
+    "https://www.sat.gob.mx/minisitio/DocumentosSAT/"
+    "TerminosCondiciones_UsoCookies_FilaVirtual_y_ServicioOficinaVirtual.pdf"
+)
 
 BTN_SIGUIENTE = 'button:has-text("Siguiente")'
 BTN_SALIR = 'button:has-text("Salir")'
