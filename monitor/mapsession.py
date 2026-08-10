@@ -68,23 +68,37 @@ async def _dump(page: Page, out_dir: Path, label: str) -> dict:
 
 
 async def _open_tramite_panel(page: Page, tramite: str) -> None:
-    """Llega a /datosPersonales y abre el panel del trámite pedido."""
-    await br.goto_portal(page, S.BASE_URL)
-    await page.wait_for_timeout(4000)
-    try:
-        await page.locator(S.MODAL_AVISO_CERRAR).click(timeout=8000)
-    except Exception:
-        pass  # el aviso no siempre aparece
-    await page.wait_for_timeout(1000)
+    """Llega a /datosPersonales y abre el panel del trámite pedido.
 
-    await page.locator(S.BTN_REGISTRAR_CITA).click(timeout=15000)
-    await page.wait_for_timeout(4000)
-    await page.locator(S.CARD_SERVICIOS_GENERALES).click(timeout=15000)
-    await page.wait_for_timeout(5000)
+    Cada paso espera a que el elemento exista en vez de dormir un rato fijo.
+    Con `slow_mo` y ventana visible el portal tarda bastante más que en
+    headless, y los tiempos fijos fallaban justo ahí.
+    """
+    await br.goto_portal(page, S.BASE_URL)
+
+    # El aviso importante no siempre sale; si sale, hay que cerrarlo.
+    try:
+        await br.click_when_ready(page, S.MODAL_AVISO_CERRAR, timeout_ms=15_000)
+        print("  aviso cerrado")
+    except Exception:
+        print("  (sin aviso que cerrar)")
+
+    await br.click_when_ready(page, S.BTN_REGISTRAR_CITA, timeout_ms=30_000)
+    await page.wait_for_url("**/menu", timeout=30_000)
+    print("  en /menu")
+
+    await br.click_when_ready(page, S.CARD_SERVICIOS_GENERALES, timeout_ms=30_000)
+    await page.wait_for_url("**/datosPersonales", timeout=30_000)
+    print("  en /datosPersonales")
 
     index = {TRAMITE_CON_RFC: 0, TRAMITE_RFC_MORAL: 1, TRAMITE_RFC_FISICA: 2}[tramite]
-    await page.locator(S.PANEL_HEADER).nth(index).click(timeout=15000)
-    await page.wait_for_timeout(2500)
+    header = page.locator(S.PANEL_HEADER).nth(index)
+    await header.wait_for(state="visible", timeout=30_000)
+    await header.click(timeout=30_000)
+    # El panel se despliega con animación: esperar al campo, no al reloj.
+    first_field = S.INPUT_CURP if tramite == TRAMITE_RFC_FISICA else S.INPUT_RFC
+    await page.locator(first_field).first.wait_for(state="visible", timeout=30_000)
+    print("  panel de trámite abierto")
 
 
 async def _fill_identity(page: Page, args) -> None:
@@ -159,10 +173,21 @@ async def run(args) -> None:
     try:
         page = session.page
         print("Abriendo el portal y llegando a la pantalla de identidad...")
-        await _open_tramite_panel(page, args.tramite)
-        await _fill_identity(page, args)
-        print("Campos de identidad llenos. El captcha queda intacto.")
+        try:
+            await _open_tramite_panel(page, args.tramite)
+            await _fill_identity(page, args)
+        except Exception as exc:
+            # Si algo falla, dejar evidencia: sin captura no hay forma de saber
+            # qué mostraba el portal en ese momento.
+            print(f"\nFALLÓ al preparar la pantalla: {type(exc).__name__}: {exc}")
+            try:
+                await _dump(page, out_dir, "fallo")
+                print(f"Se guardó qué se estaba viendo en {out_dir}")
+            except Exception:
+                print("Tampoco se pudo guardar la evidencia.")
+            raise
 
+        print("Campos de identidad llenos. El captcha queda intacto.")
         await _dump(page, out_dir, "identidad")
 
         captcha_present = await page.locator(S.CAPTCHA_INPUT).count()

@@ -85,6 +85,52 @@ async def goto_portal(page: Page, url: str = SAT_CITAS_URL, *, timeout_ms: int =
     return await page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
 
 
+async def click_when_ready(
+    page: Page, selector: str, *, timeout_ms: int = 30_000
+) -> None:
+    """Espera a que el elemento sea visible y entonces le hace clic.
+
+    Sustituye al patrón frágil de "dormir N segundos y luego clic": el portal
+    es una SPA y tarda lo que tarda. Un `sleep` fijo funciona en la máquina de
+    desarrollo y falla de madrugada en el servidor, que es justo cuando nadie
+    está viendo.
+    """
+    locator = page.locator(selector).first
+    await locator.wait_for(state="visible", timeout=timeout_ms)
+    await locator.click(timeout=timeout_ms)
+
+
+async def wait_for_any(
+    page: Page, selectors: list[str], *, timeout_ms: int = 30_000
+) -> str | None:
+    """Devuelve el primer selector que aparezca, o None si vence el plazo.
+
+    Útil cuando el portal puede responder con varias pantallas distintas
+    (disponibilidad, captcha, sesión caída) y hay que reaccionar a la que toque.
+    """
+    import asyncio
+
+    async def _wait(sel: str) -> str:
+        await page.locator(sel).first.wait_for(state="visible", timeout=timeout_ms)
+        return sel
+
+    tasks = [asyncio.create_task(_wait(s)) for s in selectors]
+    try:
+        done, pending = await asyncio.wait(
+            tasks, timeout=timeout_ms / 1000, return_when=asyncio.FIRST_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
+        for task in done:
+            with contextlib.suppress(Exception):
+                return task.result()
+        return None
+    finally:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+
+
 async def take_screenshot(
     page: Page,
     screenshots_dir: str | Path,
