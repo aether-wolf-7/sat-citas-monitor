@@ -8,7 +8,7 @@ los canales activos (tokens, destinatarios) se hace aparte con
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 # Cadencia mínima responsable frente al portal del SAT (comportamiento de
@@ -38,7 +38,29 @@ class Target:
 class Telegram:
     enabled: bool
     bot_token: str
+    # Destinos que reciben TODO, sin importar la zona (el número "de los dos"
+    # que pidió el cliente).
     chat_ids: tuple[str, ...]
+    # Destinos por zona: {"Cancun": ("123",), "CDMX": ("456",)}.
+    by_zone: dict[str, tuple[str, ...]] = field(default_factory=dict)
+
+    def destinos(self, zona: str, routing: str) -> tuple[str, ...]:
+        """Chats que deben recibir una alerta de esta zona, sin repetidos.
+
+        Con `all` reciben todos; con `by_zone` reciben los de la zona más los
+        que están dados de alta para todo.
+        """
+        if routing == "all":
+            todos = list(self.chat_ids)
+            for chats in self.by_zone.values():
+                todos.extend(chats)
+        else:
+            todos = list(self.by_zone.get(zona, ())) + list(self.chat_ids)
+        vistos: list[str] = []
+        for chat in todos:
+            if chat not in vistos:
+                vistos.append(chat)
+        return tuple(vistos)
 
 
 @dataclass(frozen=True)
@@ -129,10 +151,14 @@ def load_config(path: str | Path) -> Config:
 
     alerts = _require(raw, "alerts", "config")
     tg = _require(alerts, "telegram", "alerts")
+    by_zone_raw = tg.get("by_zone", {}) or {}
+    if not isinstance(by_zone_raw, dict):
+        raise ConfigError("telegram.by_zone debe ser un objeto {zona: [chat_ids]}")
     telegram = Telegram(
         enabled=bool(tg.get("enabled", False)),
         bot_token=str(tg.get("bot_token", "")),
         chat_ids=tuple(str(x) for x in tg.get("chat_ids", [])),
+        by_zone={str(k): tuple(str(x) for x in v) for k, v in by_zone_raw.items()},
     )
     wa = _require(alerts, "whatsapp", "alerts")
     whatsapp = WhatsApp(
@@ -189,8 +215,13 @@ def validate_runtime(cfg: Config) -> list[str]:
     if cfg.telegram.enabled:
         if not cfg.telegram.bot_token or "PON_AQUI" in cfg.telegram.bot_token:
             problems.append("Telegram está habilitado pero falta bot_token real")
-        if not cfg.telegram.chat_ids:
-            problems.append("Telegram está habilitado pero chat_ids está vacío")
+        if not cfg.telegram.chat_ids and not cfg.telegram.by_zone:
+            problems.append("Telegram está habilitado pero no hay ningún destino")
+        for target in cfg.targets:
+            if target.enabled and not cfg.telegram.destinos(target.zone, cfg.routing):
+                problems.append(
+                    f"la zona '{target.zone}' está activa pero nadie recibiría sus alertas"
+                )
     if cfg.whatsapp.enabled:
         if not cfg.whatsapp.bridge_url:
             problems.append("WhatsApp está habilitado pero falta bridge_url")

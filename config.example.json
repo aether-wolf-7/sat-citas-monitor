@@ -15,7 +15,12 @@
     "telegram": {
       "enabled": true,
       "bot_token": "PON_AQUI_EL_TOKEN_DEL_BOT",
-      "chat_ids": []
+      "_comentario": "chat_ids = quien recibe TODO (el destinatario 'de los dos'). by_zone = cada gestor con lo suyo.",
+      "chat_ids": [],
+      "by_zone": {
+        "Cancun": [],
+        "CDMX": []
+      }
     },
     "whatsapp": {
       "enabled": false,
