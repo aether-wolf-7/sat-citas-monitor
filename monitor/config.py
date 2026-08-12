@@ -122,9 +122,23 @@ def load_config(path: str | Path) -> Config:
     if not p.exists():
         raise ConfigError(f"No existe el archivo de configuración: {p}")
     try:
-        raw = json.loads(p.read_text(encoding="utf-8"))
+        texto = p.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        # Pasa cuando el archivo se guardó en ANSI/Latin-1 (típico del Bloc de
+        # notas en Windows). El mensaje de Python no le dice nada a nadie, así
+        # que se traduce a algo accionable.
+        raise ConfigError(
+            f"{p} no está guardado en UTF-8, y los acentos de nombres como "
+            f"'Módulo Coyoacán' lo rompen. Vuelve a guardarlo con codificación "
+            f"UTF-8 (detalle: {exc})"
+        ) from exc
+    try:
+        raw = json.loads(texto)
     except json.JSONDecodeError as exc:
-        raise ConfigError(f"JSON inválido en {p}: {exc}") from exc
+        raise ConfigError(
+            f"JSON inválido en {p}, línea {exc.lineno}: {exc.msg}. "
+            f"Suele ser una coma de más o unas comillas sin cerrar."
+        ) from exc
 
     polling_raw = _require(raw, "polling", "config")
     polling = Polling(
