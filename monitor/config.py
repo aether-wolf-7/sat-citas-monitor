@@ -28,7 +28,15 @@ class Polling:
 
 @dataclass(frozen=True)
 class Target:
+    """Una oficina a vigilar.
+
+    `entidad` es obligatoria porque el portal encadena los combos: sin elegir
+    entidad federativa no se habilita el de módulo. `office` tiene que ser el
+    texto **tal cual** aparece en ese combo, no como lo llamamos nosotros.
+    """
+
     zone: str
+    entidad: str
     office: str
     tramites: tuple[str, ...]
     enabled: bool
@@ -141,6 +149,7 @@ def load_config(path: str | Path) -> Config:
         targets.append(
             Target(
                 zone=str(_require(t, "zone", ctx)),
+                entidad=str(_require(t, "entidad", ctx)),
                 office=str(_require(t, "office", ctx)),
                 tramites=tuple(str(x) for x in tramites),
                 enabled=bool(t.get("enabled", True)),
