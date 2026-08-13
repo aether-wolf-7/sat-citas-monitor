@@ -120,7 +120,8 @@
       "recipients": []
     }
   },
-  "routing": "by_zone",
+  "_routing_nota": "El cliente decidió el 2026-08-13 que los dos ven todo, de las dos zonas. Con 'by_zone' cada gestor vería sólo lo suyo; se deja documentado por si más adelante cambian de opinión.",
+  "routing": "all",
   "heartbeat": {
     "max_silence_minutes": 15
   },
