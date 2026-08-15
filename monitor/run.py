@@ -122,13 +122,30 @@ async def correr(cfg: Config, args) -> int:
         for (zona, entidad), targets in grupos.items():
             for tramite in sorted({t for tg in targets for t in tg.tramites}):
                 modulos = [t.office for t in targets]
-                resultado = await sweep.barrer(
-                    page, servicio=tramite, entidad=entidad, modulos=modulos,
-                    screenshots_dir=cfg.storage.screenshots_dir,
-                )
+                try:
+                    resultado = await sweep.barrer(
+                        page, servicio=tramite, entidad=entidad, modulos=modulos,
+                        screenshots_dir=cfg.storage.screenshots_dir,
+                    )
+                except Exception as exc:
+                    # Que una entidad truene no puede tirar el resto de la
+                    # corrida ni perder lo que ya se había encontrado.
+                    print(f"  {zona}/{entidad} [{tramite}]: ERROR {type(exc).__name__}: {exc}")
+                    storage.log_check(
+                        conn, zone=zona, office="(entidad completa)", tramite=tramite,
+                        state=storage.STATE_ERROR, detail=f"{type(exc).__name__}: {exc}"[:400],
+                    )
+                    continue
+
                 print(f"  {zona}/{entidad} [{tramite}]: "
                       f"{len(resultado.hallazgos)} revisadas, "
                       f"{'completo' if resultado.completo else resultado.motivo_corte}")
+                # Lo que el portal ofrece de verdad: así cuadramos los nombres
+                # que nos pasó el cliente contra los del SAT.
+                if resultado.modulos_ofrecidos:
+                    print(f"     módulos que ofrece el portal: {resultado.modulos_ofrecidos}")
+                if resultado.servicios_ofrecidos:
+                    print(f"     servicios que ofrece el portal: {resultado.servicios_ofrecidos}")
 
                 for h in resultado.hallazgos:
                     storage.log_check(
