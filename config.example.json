@@ -128,5 +128,20 @@
   "storage": {
     "sqlite_path": "data/monitor.db",
     "screenshots_dir": "screenshots"
+  },
+  "_identity_nota": [
+    "Datos con los que se abre la sesión en el portal del SAT.",
+    "Van SÓLO en config.json, que no se versiona: son datos de una persona real.",
+    "El SAT exige que sean verdaderos y del titular, y que el titular esté de",
+    "acuerdo. No se inventan ni se usan datos de alguien más sin su permiso.",
+    "panel: 'efirma' (ya tiene RFC) | 'rfc-fisica' | 'rfc-moral'."
+  ],
+  "identity": {
+    "rfc": "",
+    "curp": "",
+    "nombre": "",
+    "razon_social": "",
+    "correo": "",
+    "panel": "efirma"
   }
 }

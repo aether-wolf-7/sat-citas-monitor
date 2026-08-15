@@ -89,6 +89,38 @@ class Email:
 
 
 @dataclass(frozen=True)
+class Identity:
+    """Datos con los que se abre la sesión en el portal.
+
+    Son datos personales de una persona real, así que viven **sólo** en
+    config.json, que no se versiona. Los términos del SAT exigen que la
+    información sea verdadera y del titular: aquí no se inventa nada ni se usa
+    la identidad de alguien que no esté enterado y de acuerdo.
+    """
+
+    rfc: str = ""
+    curp: str = ""
+    nombre: str = ""
+    razon_social: str = ""
+    correo: str = ""
+    # Panel del portal: "efirma" (ya tiene RFC), "rfc-fisica" o "rfc-moral".
+    panel: str = "efirma"
+
+    def falta(self) -> list[str]:
+        """Qué le hace falta para poder abrir una sesión."""
+        problemas: list[str] = []
+        if not self.correo:
+            problemas.append("identity.correo — el portal lo exige")
+        if self.panel in ("efirma", "rfc-moral") and not self.rfc:
+            problemas.append(f"identity.rfc — el panel '{self.panel}' lo exige")
+        if self.panel == "rfc-fisica" and not (self.curp and self.nombre):
+            problemas.append("identity.curp e identity.nombre — panel 'rfc-fisica'")
+        if self.panel == "rfc-moral" and not self.razon_social:
+            problemas.append("identity.razon_social — panel 'rfc-moral'")
+        return problemas
+
+
+@dataclass(frozen=True)
 class Heartbeat:
     max_silence_minutes: int
 
@@ -109,6 +141,7 @@ class Config:
     routing: str
     heartbeat: Heartbeat
     storage: Storage
+    identity: Identity = Identity()
 
 
 def _require(data: dict, key: str, ctx: str):
@@ -216,6 +249,21 @@ def load_config(path: str | Path) -> Config:
         screenshots_dir=str(_require(st_raw, "screenshots_dir", "storage")),
     )
 
+    id_raw = raw.get("identity", {}) or {}
+    panel = str(id_raw.get("panel", "efirma"))
+    if panel not in ("efirma", "rfc-fisica", "rfc-moral"):
+        raise ConfigError(
+            f"identity.panel='{panel}' inválido; usa 'efirma', 'rfc-fisica' o 'rfc-moral'"
+        )
+    identity = Identity(
+        rfc=str(id_raw.get("rfc", "")).strip().upper(),
+        curp=str(id_raw.get("curp", "")).strip().upper(),
+        nombre=str(id_raw.get("nombre", "")).strip(),
+        razon_social=str(id_raw.get("razon_social", "")).strip(),
+        correo=str(id_raw.get("correo", "")).strip(),
+        panel=panel,
+    )
+
     return Config(
         polling=polling,
         targets=tuple(targets),
@@ -225,6 +273,7 @@ def load_config(path: str | Path) -> Config:
         routing=routing,
         heartbeat=heartbeat,
         storage=storage,
+        identity=identity,
     )
 
 

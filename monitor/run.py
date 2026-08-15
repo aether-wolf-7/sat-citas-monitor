@@ -26,7 +26,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from . import alerts, browser as br, detector as D, selectors as S, storage, sweep
-from .config import Config, ConfigError, Target, load_config, validate_runtime
+from .config import Config, ConfigError, Identity, Target, load_config, validate_runtime
 from .mapsession import (
     TRAMITE_CON_RFC, TRAMITE_RFC_FISICA, _fill_identity, _open_tramite_panel,
 )
@@ -173,7 +173,8 @@ def main() -> None:
     ap.add_argument("--nombre", default="")
     ap.add_argument("--razon-social", default="")
     ap.add_argument("--email", default="")
-    ap.add_argument("--tramite", default=TRAMITE_CON_RFC)
+    ap.add_argument("--tramite", default="", dest="tramite_explicito",
+                    help="fuerza el panel; si se omite se usa identity.panel de la config")
     ap.add_argument("--espera", type=int, default=600,
                     help="segundos a esperar a que una persona pase el captcha")
     ap.add_argument("--liga-sesion", default="",
@@ -183,6 +184,7 @@ def main() -> None:
     ap.add_argument("--forzar", action="store_true",
                     help="arrancar aunque la config tenga problemas")
     args = ap.parse_args()
+    args.tramite = args.tramite_explicito or TRAMITE_CON_RFC
 
     try:
         cfg = load_config(args.config)
@@ -194,12 +196,28 @@ def main() -> None:
         mostrar_plan(cfg)
         raise SystemExit(0)
 
-    if not args.email:
-        ap.error("--email es obligatorio: el portal lo exige")
-    if args.tramite == TRAMITE_RFC_FISICA and not (args.curp and args.nombre):
-        ap.error("inscripción persona física requiere --curp y --nombre")
-    if args.tramite == TRAMITE_CON_RFC and not args.rfc:
-        ap.error("este trámite requiere --rfc")
+    # La identidad sale de config.json; los argumentos de línea de comandos
+    # sólo sirven para sobreescribirla en pruebas. Así el servicio de systemd
+    # puede arrancar sin que nadie le pase datos personales por la línea.
+    ident = cfg.identity
+    if not args.tramite_explicito:
+        args.tramite = ident.panel
+    args.rfc = args.rfc or ident.rfc
+    args.curp = args.curp or ident.curp
+    args.nombre = args.nombre or ident.nombre
+    args.razon_social = args.razon_social or ident.razon_social
+    args.email = args.email or ident.correo
+
+    faltantes = Identity(
+        rfc=args.rfc, curp=args.curp, nombre=args.nombre,
+        razon_social=args.razon_social, correo=args.email, panel=args.tramite,
+    ).falta()
+    if faltantes:
+        print("Faltan datos para abrir la sesión:")
+        for f in faltantes:
+            print(f"  - {f}")
+        print("\nLlénalos en config.json (sección 'identity') o pásalos por argumento.")
+        raise SystemExit(1)
 
     raise SystemExit(asyncio.run(correr(cfg, args)))
 
