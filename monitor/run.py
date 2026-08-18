@@ -181,7 +181,7 @@ async def correr(cfg: Config, args) -> int:
 
 
 def main() -> None:
-    sys.stdout.reconfigure(line_buffering=True)
+    sys.stdout.reconfigure(line_buffering=True, encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description="Monitor de citas SAT — una corrida")
     ap.add_argument("--config", default="config.json")
     ap.add_argument("--plan", action="store_true", help="sólo enseña el plan, no abre el portal")

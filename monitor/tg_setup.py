@@ -136,7 +136,7 @@ async def mandar_prueba(ruta: str) -> int:
 
 
 def main() -> None:
-    sys.stdout.reconfigure(line_buffering=True)
+    sys.stdout.reconfigure(line_buffering=True, encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description="Dar de alta destinatarios de Telegram")
     ap.add_argument("--token", default="", help="el token que da @BotFather")
     ap.add_argument("--config", default="config.json")
