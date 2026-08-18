@@ -12,81 +12,113 @@
   },
   "targets": [
     {
-      "zone": "Cancun",
+      "zone": "Cancún",
       "entidad": "QUINTANA ROO",
       "office": "Módulo de Servicios Tributarios Cancún (MST Cancún)",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": true
     },
-
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "ADSC CDMX Norte",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "ADSC CDMX Sur",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "ADSC CDMX Oriente",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "ADSC CDMX Poniente",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "Módulo Plaza Inn",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "Módulo Tlalpan",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "Módulo Xochimilco",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "Módulo Azcapotzalco",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "Módulo Coyoacán",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     },
     {
       "zone": "CDMX",
       "entidad": "CIUDAD DE MEXICO",
       "office": "Módulo Gustavo A. Madero",
-      "tramites": ["RFC", "e.firma"],
+      "tramites": [
+        "RFC",
+        "e.firma"
+      ],
       "enabled": false
     }
   ],
@@ -97,8 +129,8 @@
       "_comentario": "chat_ids = quien recibe TODO. by_zone = cada gestor con lo suyo. OJO: un bot de Telegram NO puede escribirle a un número; cada persona tiene que abrir el bot y darle Start para que exista su chat_id.",
       "chat_ids": [],
       "by_zone": {
-        "Cancun": [],
-        "CDMX": []
+        "CDMX": [],
+        "Cancún": []
       }
     },
     "whatsapp": {
@@ -107,8 +139,8 @@
       "_comentario": "Números en formato internacional sin signos: 52 + 10 dígitos.",
       "numbers": [],
       "by_zone": {
-        "Cancun": [],
-        "CDMX": []
+        "CDMX": [],
+        "Cancún": []
       }
     },
     "email": {
