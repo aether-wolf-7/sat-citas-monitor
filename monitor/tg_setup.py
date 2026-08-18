@@ -36,12 +36,9 @@ def _llamar(token: str, metodo: str, **params) -> dict:
         raise SystemExit(f"No se pudo hablar con Telegram: {type(exc).__name__}: {exc}")
     if r.status_code in (401, 404):
         raise SystemExit(
-            "Telegram no reconoce ese token.
-"
-            "  - Cópialo completo, incluyendo los dos puntos del centro.
-"
-            "  - Se ve así: 1234567890:AAF-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-"
+            "Telegram no reconoce ese token.\n"
+            "  - Cópialo completo, incluyendo los dos puntos del centro.\n"
+            "  - Se ve así: 1234567890:AAF-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
             "  - Si lo perdiste, escríbele /mybots a @BotFather y ahí lo vuelves a ver."
         )
     try:
