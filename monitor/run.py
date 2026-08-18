@@ -114,6 +114,14 @@ async def correr(cfg: Config, args) -> int:
                 conn, zone=zona_principal, office="(todas)", state=deteccion.state,
                 detail="nadie abrió la sesión dentro del plazo",
             )
+            # Avisar que NO se revisó. Salirse callado dejaría a la gente
+            # creyendo que se revisó y no había citas, que es exactamente el
+            # error que este sistema existe para no cometer.
+            sin_revisar = alerts.alerta_sesion_no_abierta(
+                zona=zona_principal, minutos=max(1, args.espera // 60)
+            )
+            for canal, ok, detalle in await alerts.despachar(cfg, sin_revisar, conn):
+                print(f"  aviso 'no se revisó' -> {canal}: {'ok' if ok else 'FALLÓ ' + detalle}")
             return 2
 
         print(f"\nSesión viva. {D.describe(deteccion)}. Empieza el barrido.\n")

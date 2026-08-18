@@ -99,6 +99,29 @@ def alerta_de_sesion(
     )
 
 
+def alerta_sesion_no_abierta(*, zona: str, minutos: int) -> Alerta:
+    """Se pidió una sesión y nadie la abrió dentro del plazo.
+
+    Se avisa aunque "no haya pasado nada", porque justamente no pasó nada y
+    quien esperaba resultados tiene que enterarse. Callarse aquí sería dejar a
+    alguien creyendo que el sistema revisó y no encontró lugar, cuando la
+    verdad es que nunca alcanzó a mirar.
+    """
+    texto = "\n".join([
+        "NO SE ALCANZÓ A REVISAR",
+        "",
+        f"SAT: {zona}",
+        f"Se pidió abrir la sesión y nadie pasó el captcha en {minutos} minutos.",
+        f"Momento: {_sello()}",
+        "",
+        "No se revisó ninguna oficina, así que esto NO significa que no haya",
+        "citas: significa que esta vez no llegamos a ver.",
+        "",
+        "Cuando quieras, pide otra sesión y lo intentamos de nuevo.",
+    ])
+    return Alerta(tipo=storage.ALERT_HEARTBEAT, zona=zona, texto=texto)
+
+
 def alerta_de_silencio(*, zona: str, minutos: int) -> Alerta:
     """Watchdog: llevamos demasiado tiempo sin una lectura válida.
 
