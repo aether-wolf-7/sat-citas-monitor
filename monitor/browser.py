@@ -15,6 +15,7 @@ Dos decisiones importantes aquí:
 from __future__ import annotations
 
 import contextlib
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -63,6 +64,7 @@ async def launch(
     """Abre Chromium con perfil persistente y devuelve la sesión lista."""
     profile = Path(user_data_dir)
     profile.mkdir(parents=True, exist_ok=True)
+    limpiar_candados_huerfanos(profile)
 
     pw = await async_playwright().start()
     context = await pw.chromium.launch_persistent_context(
@@ -83,6 +85,46 @@ async def launch(
 async def goto_portal(page: Page, url: str = SAT_CITAS_URL, *, timeout_ms: int = 45_000):
     """Carga el portal. Devuelve la respuesta (o None si vino de caché/redirect)."""
     return await page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+
+
+def limpiar_candados_huerfanos(profile: Path) -> list[str]:
+    """Borra los candados que deja Chromium cuando lo matan de golpe.
+
+    Chromium marca el perfil como "en uso" con `SingletonLock`, un enlace que
+    apunta a `equipo-PID`. Si el proceso muere sin limpiar —una caída, un
+    `kill`, un servidor reiniciado— el candado se queda ahí y **todos los
+    arranques siguientes fallan** con "Opening in existing browser session".
+
+    Para un servicio que debe levantarse solo a cualquier hora, eso es
+    inaceptable: una sola caída lo dejaría muerto para siempre. Aquí se revisa
+    si el proceso dueño sigue vivo; si ya no está, el candado se retira.
+    Si sigue vivo no se toca nada, para no atropellar una sesión real.
+
+    Devuelve los nombres de los archivos retirados.
+    """
+    retirados: list[str] = []
+    lock = profile / "SingletonLock"
+    if not lock.is_symlink() and not lock.exists():
+        return retirados
+
+    dueno_vivo = False
+    with contextlib.suppress(Exception):
+        destino = os.readlink(lock)  # p.ej. "mi-servidor-12345"
+        pid = int(destino.rsplit("-", 1)[-1])
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.kill(pid, 0)          # señal 0: sólo pregunta si existe
+            dueno_vivo = True
+
+    if dueno_vivo:
+        return retirados
+
+    for nombre in ("SingletonLock", "SingletonSocket", "SingletonCookie"):
+        ruta = profile / nombre
+        with contextlib.suppress(Exception):
+            if ruta.is_symlink() or ruta.exists():
+                ruta.unlink()
+                retirados.append(nombre)
+    return retirados
 
 
 async def click_when_ready(

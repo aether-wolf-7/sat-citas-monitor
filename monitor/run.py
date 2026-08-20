@@ -27,6 +27,7 @@ from pathlib import Path
 
 from . import alerts, browser as br, detector as D, selectors as S, storage, sweep
 from .config import Config, ConfigError, Identity, Target, load_config, validate_runtime
+from .handoff import Handoff, HandoffError
 from .mapsession import (
     TRAMITE_CON_RFC, TRAMITE_RFC_FISICA, _fill_identity, _open_tramite_panel,
 )
@@ -84,8 +85,29 @@ async def correr(cfg: Config, args) -> int:
     tramite_portal = (
         TRAMITE_RFC_FISICA if args.tramite == TRAMITE_RFC_FISICA else TRAMITE_CON_RFC
     )
+
+    # Pantalla remota: levanta Xvfb + noVNC + túnel y devuelve la liga que el
+    # gestor abre en el celular para resolver el captcha. Sin esto, el sistema
+    # sólo sirve en la máquina de quien lo corre.
+    pantalla: Handoff | None = None
+    liga_sesion = args.liga_sesion
+    if args.handoff:
+        pantalla = Handoff()
+        faltan = pantalla.disponible()
+        if faltan:
+            print(f"No se puede abrir la pantalla remota, faltan: {', '.join(faltan)}")
+            print("Corre deploy/instalar.sh en el servidor.")
+            return 1
+        print("Levantando la pantalla remota...")
+        try:
+            liga_sesion = await pantalla.start()
+        except HandoffError as exc:
+            print(f"Falló la pantalla remota: {exc}")
+            return 1
+        print(f"Liga para el gestor: {liga_sesion}\n")
+
     sesion = await br.launch(
-        user_data_dir=args.perfil, headless=False, slow_mo=150
+        user_data_dir=args.perfil, headless=not args.handoff, slow_mo=150
     )
     encontrados = 0
     try:
@@ -100,7 +122,7 @@ async def correr(cfg: Config, args) -> int:
         aviso = alerts.alerta_de_sesion(
             zona=zona_principal,
             motivo="hay que pasar el captcha para abrir la ventana de 5 minutos",
-            liga_sesion=args.liga_sesion,
+            liga_sesion=liga_sesion,
         )
         for canal, ok, detalle in await alerts.despachar(cfg, aviso, conn):
             print(f"  alarma 1 -> {canal}: {'ok' if ok else 'FALLÓ ' + detalle}")
@@ -176,7 +198,7 @@ async def correr(cfg: Config, args) -> int:
                 if not resultado.completo and resultado.estado_final != D.SESSION_OK:
                     corte = alerts.alerta_de_sesion(
                         zona=zona, motivo=resultado.motivo_corte,
-                        liga_sesion=args.liga_sesion,
+                        liga_sesion=liga_sesion,
                     )
                     await alerts.despachar(cfg, corte, conn)
 
@@ -185,6 +207,9 @@ async def correr(cfg: Config, args) -> int:
     finally:
         if not args.dejar_abierto:
             await sesion.close()
+        if pantalla is not None:
+            await pantalla.stop()
+            print("Pantalla remota apagada; la liga ya no sirve.")
         conn.close()
 
 
@@ -203,7 +228,9 @@ def main() -> None:
     ap.add_argument("--espera", type=int, default=600,
                     help="segundos a esperar a que una persona pase el captcha")
     ap.add_argument("--liga-sesion", default="",
-                    help="liga noVNC que se manda en la alarma 1 (paso 8)")
+                    help="liga fija para la alarma 1 (si no se usa --handoff)")
+    ap.add_argument("--handoff", action="store_true",
+                    help="abrir pantalla remota (Xvfb + noVNC + túnel) para el celular")
     ap.add_argument("--perfil", default="data/run-profile")
     ap.add_argument("--dejar-abierto", action="store_true")
     ap.add_argument("--forzar", action="store_true",

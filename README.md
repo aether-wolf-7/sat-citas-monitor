@@ -18,7 +18,7 @@ Cada alerta indica: **SAT (Cancún o CDMX)** + **módulo/oficina** + **trámite
 
 ## Arquitectura
 
-- **Python 3.11+ / Playwright** (Chromium): carga el portal, valida por
+- **Python 3.10+ / Playwright** (Chromium): carga el portal, valida por
   selectores que la pantalla de disponibilidad realmente está viva antes de
   decidir "no hay citas", detecta estado de sesión/captcha y toma capturas.
 - **Heartbeat / watchdog:** el silencio nunca significa "no hay citas";
