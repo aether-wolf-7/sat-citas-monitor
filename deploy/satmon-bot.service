@@ -1,0 +1,28 @@
+[Unit]
+# Bot de Telegram: es la manera en que el gestor pide una búsqueda.
+# Necesita la pantalla remota encendida para poder entregar una liga útil.
+Description=Bot de Telegram del monitor SAT
+After=network-online.target satmon-pantalla.service
+Wants=network-online.target satmon-pantalla.service
+
+[Service]
+Type=simple
+User=satmon
+Group=satmon
+WorkingDirectory=/opt/sat-citas-monitor
+Environment=HOME=/home/satmon
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sat-citas-monitor/.venv/bin/python -m monitor.bot --config config.json --espera 900
+
+# Si se cae, que vuelva: sin el bot, los gestores se quedan sin manera de pedir.
+Restart=always
+RestartSec=10
+TimeoutStopSec=20
+
+# Al detener el bot NO se matan las búsquedas que ya estén en curso: se lanzan
+# en su propia sesión, para que reiniciar el bot no tumbe la sesión de alguien
+# que está resolviendo su captcha en ese momento.
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

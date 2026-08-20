@@ -134,14 +134,17 @@ async def correr(cfg: Config, args) -> int:
         print("Identidad lista. El captcha lo resuelve una persona.\n")
 
         # --- ALARMA 1: se necesita un humano ---
+        # Cuando la búsqueda la pidió alguien por el bot, el bot ya le mandó la
+        # liga en su propio mensaje; repetirla sería puro ruido.
         zona_principal = next(iter(grupos))[0]
-        aviso = alerts.alerta_de_sesion(
-            zona=zona_principal,
-            motivo="hay que pasar el captcha para abrir la ventana de 5 minutos",
-            liga_sesion=liga_sesion,
-        )
-        for canal, ok, detalle in await alerts.despachar(cfg, aviso, conn):
-            print(f"  alarma 1 -> {canal}: {'ok' if ok else 'FALLÓ ' + detalle}")
+        if not args.sin_alarma_inicial:
+            aviso = alerts.alerta_de_sesion(
+                zona=zona_principal,
+                motivo="hay que pasar el captcha para abrir la ventana de 5 minutos",
+                liga_sesion=liga_sesion,
+            )
+            for canal, ok, detalle in await alerts.despachar(cfg, aviso, conn):
+                print(f"  alarma 1 -> {canal}: {'ok' if ok else 'FALLÓ ' + detalle}")
 
         deteccion = await sweep.esperar_sesion_humana(
             page, timeout_segundos=args.espera
@@ -247,6 +250,8 @@ def main() -> None:
                     help="liga fija para la alarma 1 (si no se usa --handoff)")
     ap.add_argument("--handoff", action="store_true",
                     help="abrir pantalla remota (Xvfb + noVNC + túnel) para el celular")
+    ap.add_argument("--sin-alarma-inicial", action="store_true",
+                    help="no mandar la alarma 1 (la usa el bot, que ya avisó él)")
     ap.add_argument("--perfil", default="data/run-profile")
     ap.add_argument("--dejar-abierto", action="store_true")
     ap.add_argument("--forzar", action="store_true",
