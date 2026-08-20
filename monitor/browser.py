@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import contextlib
 import os
+import signal
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -60,10 +62,19 @@ async def launch(
     user_data_dir: str | Path = "data/browser-profile",
     headless: bool = True,
     slow_mo: int = 0,
+    matar_huerfanos: bool = True,
 ) -> BrowserSession:
     """Abre Chromium con perfil persistente y devuelve la sesión lista."""
     profile = Path(user_data_dir)
     profile.mkdir(parents=True, exist_ok=True)
+    # Orden importante: primero se cierran los navegadores huérfanos de este
+    # perfil, y sólo entonces se retira su candado. Al revés no serviría de
+    # nada, porque el candado de un proceso vivo no se toca.
+    if matar_huerfanos:
+        muertos = matar_navegadores_del_perfil(profile)
+        if muertos:
+            print(f"  [navegador] se cerraron {len(muertos)} procesos huérfanos "
+                  f"de una corrida anterior")
     limpiar_candados_huerfanos(profile)
 
     pw = await async_playwright().start()
@@ -125,6 +136,47 @@ def limpiar_candados_huerfanos(profile: Path) -> list[str]:
                 ruta.unlink()
                 retirados.append(nombre)
     return retirados
+
+
+def matar_navegadores_del_perfil(profile: Path) -> list[int]:
+    """Mata el Chromium que haya quedado vivo usando este perfil.
+
+    Cuando una corrida se cae de golpe, el navegador puede sobrevivir huérfano.
+    Entonces el candado del perfil apunta a un proceso que **sí está vivo**, y
+    `limpiar_candados_huerfanos` —con razón— no lo toca. Resultado: todas las
+    corridas siguientes fallan para siempre, y en un servidor de 4 GB además se
+    quedan quince procesos comiendo memoria.
+
+    Aquí se buscan por su línea de comandos los navegadores que apuntan a
+    *nuestro* perfil y se les pide que se vayan. Sólo aplica a este perfil, así
+    que no se lleva entre las patas ningún otro navegador del sistema.
+
+    Devuelve los PID que se cerraron.
+    """
+    muertos: list[int] = []
+    proc_dir = Path("/proc")
+    if not proc_dir.is_dir():  # Windows / macOS: no aplica
+        return muertos
+
+    objetivo = f"--user-data-dir={profile.resolve()}".encode()
+    for entrada in proc_dir.iterdir():
+        if not entrada.name.isdigit():
+            continue
+        pid = int(entrada.name)
+        if pid == os.getpid():
+            continue
+        with contextlib.suppress(Exception):
+            cmdline = (entrada / "cmdline").read_bytes()
+            if objetivo in cmdline:
+                os.kill(pid, signal.SIGTERM)
+                muertos.append(pid)
+    if muertos:
+        time.sleep(2)
+        for pid in muertos:  # los tercos se van con SIGKILL
+            with contextlib.suppress(Exception):
+                os.kill(pid, 0)
+                os.kill(pid, signal.SIGKILL)
+    return muertos
 
 
 async def click_when_ready(
