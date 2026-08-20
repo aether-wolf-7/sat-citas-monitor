@@ -14,10 +14,10 @@
     {
       "zone": "Cancún",
       "entidad": "QUINTANA ROO",
-      "office": "Módulo de Servicios Tributarios Cancún (MST Cancún)",
+      "office": "ADSC Quintana Roo \"2\" Cancún",
       "tramites": [
-        "RFC",
-        "e.firma"
+        "e.firma de Personas Físicas",
+        "Actualizaciones y Servicios al RFC para Personas Físicas"
       ],
       "enabled": true
     },
@@ -175,5 +175,13 @@
     "razon_social": "",
     "correo": "",
     "panel": "efirma"
-  }
+  },
+  "_nombres_verificados": [
+    "Nombres verificados contra el portal el 2026-08-20 en una sesión real.",
+    "El módulo de Cancún NO se llama 'MST Cancún'; el portal lo lista como",
+    "'ADSC Quintana Roo \"2\" Cancún'. Los de CDMX siguen sin verificar: hay que",
+    "barrer una vez CDMX para leer sus nombres reales antes de habilitarlos.",
+    "OJO: 'Actualizaciones y Servicios al RFC' NO es lo mismo que inscribirse al",
+    "RFC. La inscripción va por otro panel del portal (identity.panel=rfc-fisica)."
+  ]
 }
