@@ -82,6 +82,17 @@ class Bot:
         await self._llamar(cliente, "sendMessage", chat_id=chat_id, text=texto,
                            disable_web_page_preview="false")
 
+    async def _avisar_admin(self, cliente: httpx.AsyncClient, texto: str) -> None:
+        """Le avisa al primer chat dado de alta, que hace las veces de admin.
+
+        Se usa para cosas de operación —como un gestor nuevo estrenando el
+        bot— que si no habría que ir a buscar a mano en las bitácoras.
+        """
+        if not self.autorizados:
+            return
+        admin = sorted(self.autorizados)[0]
+        await self.responder(cliente, admin, texto)
+
     # ---------- estado de la corrida ----------
 
     @property
@@ -168,11 +179,26 @@ class Bot:
             return
 
         if chat_id not in self.autorizados:
-            # Ni se le da información de más a quien no está dado de alta.
+            # A quien no está dado de alta no se le da acceso ni información de
+            # más. Pero sí se le explica qué sigue, porque el caso normal no es
+            # un intruso: es un gestor nuevo estrenando el bot.
             await self.responder(cliente, chat_id,
-                "Este bot es privado. Si crees que deberías tener acceso, "
-                "habla con quien te compartió el sistema.")
-            print(f"  [bot] chat no autorizado: {chat_id}", flush=True)
+                "Todavía no estás dado de alta, pero ya quedaste apuntado.\n\n"
+                "Avísale a quien te pasó este bot para que te active, y en "
+                "cuanto lo haga ya puedes pedirme búsquedas con /buscar.")
+            nombre = " ".join(x for x in (chat.get("first_name"),
+                                          chat.get("last_name")) if x) or "(sin nombre)"
+            usuario = f" @{chat['username']}" if chat.get("username") else ""
+            print(f"  [bot] chat nuevo sin dar de alta: {chat_id} — {nombre}{usuario}",
+                  flush=True)
+            # Se le pasa el dato al administrador para que no tenga que ir a
+            # buscarlo: sin el chat_id no hay forma de dar de alta a nadie.
+            await self._avisar_admin(cliente,
+                f"Alguien nuevo abrió el bot:\n\n"
+                f"  nombre  : {nombre}{usuario}\n"
+                f"  chat_id : {chat_id}\n\n"
+                f"Para darlo de alta, agrega ese chat_id a 'chat_ids' en "
+                f"config.json y reinicia el bot.")
             return
 
         if texto.startswith("/buscar"):
