@@ -21,13 +21,15 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from collections import defaultdict
 from pathlib import Path
 
 from . import alerts, browser as br, detector as D, selectors as S, storage, sweep
 from .config import Config, ConfigError, Identity, Target, load_config, validate_runtime
-from .handoff import Handoff, HandoffError
+from .handoff import DISPLAY, Handoff, HandoffError
+from .pantalla import url_actual
 from .mapsession import (
     TRAMITE_CON_RFC, TRAMITE_RFC_FISICA, _fill_identity, _open_tramite_panel,
 )
@@ -92,7 +94,18 @@ async def correr(cfg: Config, args) -> int:
     pantalla: Handoff | None = None
     liga_sesion = args.liga_sesion
     if args.handoff:
-        pantalla = Handoff()
+        # Si ya hay una pantalla encendida como servicio, la corrida se cuelga
+        # de ella. Así la liga no nace ni muere con cada corrida, que era lo
+        # que dejaba al gestor con una liga muerta en la mano.
+        ya_encendida = url_actual()
+        if ya_encendida:
+            os.environ["DISPLAY"] = DISPLAY
+            liga_sesion = ya_encendida
+            print("Usando la pantalla que ya está encendida como servicio.")
+            print(f"Liga: {liga_sesion}\n")
+        else:
+            pantalla = Handoff()
+    if pantalla is not None:
         faltan = pantalla.disponible()
         if faltan:
             print(f"No se puede abrir la pantalla remota, faltan: {', '.join(faltan)}")
@@ -106,8 +119,11 @@ async def correr(cfg: Config, args) -> int:
             return 1
         print(f"Liga para el gestor: {liga_sesion}\n")
 
+    # Con pantalla —propia o prestada— el navegador corre con interfaz para que
+    # el gestor lo vea; sin ella, headless.
+    con_pantalla = pantalla is not None or bool(url_actual())
     sesion = await br.launch(
-        user_data_dir=args.perfil, headless=not args.handoff, slow_mo=150
+        user_data_dir=args.perfil, headless=not con_pantalla, slow_mo=150
     )
     encontrados = 0
     try:

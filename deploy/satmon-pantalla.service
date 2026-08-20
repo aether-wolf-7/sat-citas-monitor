@@ -1,0 +1,27 @@
+[Unit]
+# Pantalla remota donde el gestor resuelve el captcha desde su celular.
+# Vive aparte de las corridas del monitor a propósito: si naciera y muriera
+# con cada corrida, la liga se apagaría antes de que alguien alcance a abrirla.
+Description=Pantalla remota SAT (Xvfb + noVNC + túnel)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=satmon
+Group=satmon
+WorkingDirectory=/opt/sat-citas-monitor
+Environment=HOME=/home/satmon
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sat-citas-monitor/.venv/bin/python -m monitor.pantalla
+
+# Que vuelva sola: si se cae de madrugada, nadie va a estar para levantarla.
+Restart=always
+RestartSec=10
+# Al detener, se lleva a todos sus hijos (Xvfb, x11vnc, websockify, túnel).
+# Sin esto quedan huérfanos comiendo memoria y bloqueando el siguiente arranque.
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
